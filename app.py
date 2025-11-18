@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 import os
 from werkzeug.utils import secure_filename
 from dateutil.relativedelta import relativedelta
+from flask import send_from_directory
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///escola_futsal.db'
@@ -13,6 +14,21 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'sua_chave_secreta_aqui'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
+
+import os
+from flask import send_from_directory
+
+# Garante que a pasta uploads existe e serve arquivos estáticos
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 
 # Injeta a função now() nos templates (pra data do recibo)
 @app.context_processor
