@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Mensalidades em Aberto{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Mensalidades em Aberto</h4>
+    </div>
+    <div class="card-body">
+        {% if alunos_aberto %}
+            {% for item in alunos_aberto %}
+                <div class="border rounded p-3 mb-3 bg-light">
+                    <h5>
+                        {% if item.aluno.foto_path %}
+                            <img src="{{ url_for('uploaded_file', filename=item.aluno.foto_path) }}" class="foto-aluno me-2">
+                        {% endif %}
+                        {{ item.aluno.nome_completo }}
+                        <small class="text-muted">({{ item.aluno.nome_responsavel }})</small>
+                    </h5>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-danger">
+                                <tr>
+                                    <th>Vencimento</th><th>Valor</th><th>Juros</th><th>Total</th><th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pag in item.pagamentos %}
+                                <tr>
+                                    <td>{{ pag.pagamento.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                                    <td>R$ {{ "%.2f"|format(pag.pagamento.valor) }}</td>
+                                    <td class="text-danger">R$ {{ "%.2f"|format(pag.juros) }}</td>
+                                    <td><strong>R$ {{ "%.2f"|format(pag.total) }}</strong></td>
+                                    <td>
+                                        {% if pag.pagamento.pago %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check"></i>
+                                                {{ pag.pagamento.forma_pagamento.replace('_',' ')|title }}
+                                            </span>
+                                            <small class="d-block text-muted">
+                                                {{ pag.pagamento.data_pagamento.strftime('%d/%m') }}
+                                            </small>
+                                        {% else %}
+                                            <a href="{{ url_for('pagar', pagamento_id=pag.pagamento.id) }}"
+                                               class="btn btn-success btn-sm"><i class="bi bi-cash"></i> Pagar</a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-success"><i class="bi bi-check-circle"></i> Tudo em dia!</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

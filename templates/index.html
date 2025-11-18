@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Início{% endblock %}
+{% block content %}
+
+<!-- FILTRO DE MÊS -->
+<div class="text-center mb-4">
+    <form method="GET" class="d-inline-block">
+        <div class="input-group input-group-lg" style="max-width: 400px; margin: 0 auto;">
+            <span class="input-group-text bg-primary text-white">Mês/Ano</span>
+            <select name="mes" class="form-select">
+                {% for m in range(1,13) %}
+                    <option value="{{ m }}" {% if m == mes_atual %}selected{% endif %}>
+                        {{ ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][m-1] }}
+                    </option>
+                {% endfor %}
+            </select>
+            <input type="number" name="ano" class="form-control" value="{{ ano_atual }}" min="2023" max="2030" style="width:90px;">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </div>
+    </form>
+    <div class="mt-2">
+        <small class="text-muted">Mostrando dados de <strong>{{ ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][mes_atual-1] }}/{{ ano_atual }}</strong></small>
+    </div>
+</div>
+
+<!-- CARDS ESTATÍSTICAS -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">{{ total_alunos }}</h4>
+                    <p class="mb-0">Alunos Cadastrados</p>
+                </div>
+                <i class="bi bi-people display-4 opacity-75"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-danger h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">R$ {{ "%.2f"|format(em_aberto) }}</h4>
+                    <p class="mb-0">Em Aberto ({{ ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][mes_atual-1] }})</p>
+                </div>
+                <i class="bi bi-exclamation-triangle display-4 opacity-75"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">R$ {{ "%.2f"|format(recebido_mes) }}</h4>
+                    <p class="mb-0">Recebido em {{ ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][mes_atual-1] }}</p>
+                </div>
+                <i class="bi bi-cash-coin display-4 opacity-75"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-warning h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">{{ inadimplentes }}</h4>
+                    <p class="mb-0">Inadimplentes ({{ ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][mes_atual-1] }})</p>
+                </div>
+                <i class="bi bi-person-x display-4 opacity-75"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de acesso rápido -->
+<div class="row text-center">
+    <div class="col-md-4 mb-4">
+        <div class="card border-primary h-100">
+            <div class="card-body d-flex flex-column">
+                <i class="bi bi-person-plus display-1 text-primary"></i>
+                <h5 class="card-title mt-3">Cadastrar Aluno</h5>
+                <a href="{{ url_for('cadastro_aluno') }}" class="btn btn-primary mt-auto">Ir</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card border-success h-100">
+            <div class="card-body d-flex flex-column">
+                <i class="bi bi-currency-dollar display-1 text-success"></i>
+                <h5 class="card-title mt-3">Financeiro</h5>
+                <a href="{{ url_for('cadastro_financeiro') }}" class="btn btn-success mt-auto">Ir</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card border-warning h-100">
+            <div class="card-body d-flex flex-column">
+                <i class="bi bi-chat-dots display-1 text-warning"></i>
+                <h5 class="card-title mt-3">Cobrança</h5>
+                <a href="{{ url_for('cobranca') }}" class="btn btn-warning mt-auto">Ir</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card border-dark">
+            <div class="card-body d-flex flex-column">
+                <i class="bi bi-people display-1 text-dark"></i>
+                <h5 class="card-title mt-3">Lista de Alunos</h5>
+                <a href="{{ url_for('relatorio_alunos') }}" class="btn btn-dark mt-auto">Ver Todos</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-body d-flex flex-column">
+                <i class="bi bi-x-circle display-1 text-danger"></i>
+                <h5 class="card-title mt-3">Inadimplentes</h5>
+                <a href="{{ url_for('relatorio_alunos_aberto') }}" class="btn btn-danger mt-auto">Ver Pendências</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="col-md-6">
+    <div class="card border-success">
+        <div class="card-body d-flex flex-column">
+            <i class="bi bi-receipt display-1 text-success"></i>
+            <h5 class="card-title mt-3">Recibos Emitidos</h5>
+            <a href="{{ url_for('relatorio_recibos') }}" class="btn btn-success mt-auto">Ver Recibos</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,291 @@
+<!-- templates/cobranca.html -->
+{% extends "base.html" %}
+{% block title %}Cobrança e Pagamento{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-warning text-dark">
+        <h4 class="mb-0">Cobrança e Pagamento</h4>
+    </div>
+    <div class="card-body">
+
+        <!-- FILTROS -->
+        <form method="GET" class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Mês</label>
+                <select class="form-select" name="mes">
+                    <option value="">Todos</option>
+                    {% for m in range(1,13) %}
+                        <option value="{{ m }}" {% if mes == m|string %}selected{% endif %}>
+                            {{ "%02d"|format(m) }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Ano</label>
+                <input type="number" class="form-control" name="ano" value="{{ ano or '' }}" placeholder="2025" min="2020" max="2030">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">De</label>
+                <input type="date" class="form-control" name="data_inicio" value="{{ data_inicio or '' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Até</label>
+                <input type="date" class="form-control" name="data_fim" value="{{ data_fim or '' }}">
+            </div>
+            <div class="col-md-12 text-end">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="{{ url_for('cobranca') }}" class="btn btn-secondary">Limpar</a>
+            </div>
+        </form>
+
+        <!-- FORMULÁRIO DE COBRANÇA SELECIONADA -->
+        <form method="POST" id="formCobranca">
+            <input type="hidden" name="cobranca_selecionada" value="1">
+
+            <!-- BOTÃO ENVIAR COBRANÇA SELECIONADA -->
+            {% if dados %}
+                <div class="text-end mb-3">
+                    <button type="button" class="btn btn-success btn-sm" id="btnEnviarCobranca" style="display:none;" onclick="enviarCobranca()">
+                        Enviar Cobrança Selecionada
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#whatsappAllModal">
+                        Enviar para Todos
+                    </button>
+                </div>
+            {% endif %}
+
+            <!-- LISTA AGRUPADA POR ALUNO -->
+            {% if dados %}
+                {% set alunos_dict = {} %}
+                {% for item in dados %}
+                    {% if item.aluno.id not in alunos_dict %}
+                        {% set _ = alunos_dict.update({item.aluno.id: {'aluno': item.aluno, 'pagamentos': []}}) %}
+                    {% endif %}
+                    {% set _ = alunos_dict[item.aluno.id].pagamentos.append(item) %}
+                {% endfor %}
+
+                {% for aluno_id, info in alunos_dict.items() %}
+                    {% set aluno = info.aluno %}
+                    {% set pagamentos = info.pagamentos %}
+                    <div class="border rounded p-3 mb-3 bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                {% if aluno.foto_path %}
+                                    <img src="{{ url_for('uploaded_file', filename=aluno.foto_path) }}" class="foto-aluno me-2" style="width:40px;height:40px;">
+                                {% else %}
+                                    <i class="bi bi-person-circle text-muted me-2" style="font-size:32px;"></i>
+                                {% endif %}
+                                <strong>{{ aluno.nome_completo }}</strong>
+                                <small class="text-muted">({{ aluno.nome_responsavel }})</small>
+                                <span class="badge bg-danger ms-2">{{ pagamentos|length }} pendente{{ '' if pagamentos|length == 1 else 's' }}</span>
+                            </h6>
+                            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapse-{{ aluno.id }}" aria-expanded="false">
+                                Detalhes
+                            </button>
+                        </div>
+
+                        <!-- COLLAPSE COM DETALHES -->
+                        <div class="collapse mt-3" id="collapse-{{ aluno.id }}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th><input type="checkbox" class="form-check-input" id="select-all-{{ aluno.id }}" onchange="toggleAll(this, '{{ aluno.id }}')"></th>
+                                            <th>Vencimento</th>
+                                            <th>Valor</th>
+                                            <th>Juros</th>
+                                            <th>Total</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in pagamentos %}
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" class="form-check-input parcela-checkbox" name="parcela_ids" value="{{ item.pagamento.id }}" data-aluno="{{ aluno.id }}">
+                                            </td>
+                                            <td>{{ item.pagamento.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                                            <td>R$ {{ "%.2f"|format(item.pagamento.valor) }}</td>
+                                            <td class="text-danger">R$ {{ "%.2f"|format(item.juros) }}</td>
+                                            <td><strong>R$ {{ "%.2f"|format(item.total) }}</strong></td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+
+                                                    <!-- COBRAR ESTA PARCELA INDIVIDUALMENTE -->
+                                                    {% set msg_parcela = "Olá " ~ aluno.nome_responsavel ~ "!%0A%0A*COBRANÇA - Escola de Futsal*%0A%0AAluno: " ~ aluno.nome_completo ~ "%0AVencimento: " ~ item.pagamento.data_vencimento.strftime('%d/%m/%Y') ~ "%0AValor: R$ " ~ "%.2f"|format(item.pagamento.valor) ~ "%0AJuros: R$ " ~ "%.2f"|format(item.juros) ~ "%0A*Total: R$ " ~ "%.2f"|format(item.total) ~ "*%0A%0AFavor regularizar o quanto antes.%0AObrigado!%0AEscola de Futsal" %}
+                                                    <a href="https://wa.me/?text={{ msg_parcela }}" target="_blank" class="btn btn-outline-success btn-sm" title="Cobrar esta parcela">
+                                                        
+                                                    </a>
+
+                                                    <!-- PAGAR -->
+                                                    <form method="POST" class="d-inline">
+                                                        <input type="hidden" name="pagar_id" value="{{ item.pagamento.id }}">
+                                                        <button type="submit" class="btn btn-success btn-sm" title="Pagar">
+                                                            
+                                                        </button>
+                                                    </form>
+
+                                                    <!-- EDITAR -->
+                                                    <a href="{{ url_for('editar_parcela', pagamento_id=item.pagamento.id) }}"
+                                                       class="btn btn-warning btn-sm" title="Editar">
+                                                        
+                                                    </a>
+
+                                                    <!-- EXCLUIR -->
+                                                    <button type="button" class="btn btn-danger btn-sm" title="Excluir"
+                                                            data-bs-toggle="modal" data-bs-target="#deleteModal-{{ item.pagamento.id }}">
+                                                        
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Modal Exclusão -->
+                                        <div class="modal fade" id="deleteModal-{{ item.pagamento.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h5 class="modal-title">Confirmar Exclusão</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Excluir permanentemente esta parcela?</p>
+                                                        <ul class="list-unstyled">
+                                                            <li><strong>Aluno:</strong> {{ aluno.nome_completo }}</li>
+                                                            <li><strong>Vencimento:</strong> {{ item.pagamento.data_vencimento.strftime('%d/%m/%Y') }}</li>
+                                                            <li><strong>Valor:</strong> R$ {{ "%.2f"|format(item.pagamento.valor) }}</li>
+                                                        </ul>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <form method="POST" action="{{ url_for('excluir_parcela', pagamento_id=item.pagamento.id) }}" class="d-inline">
+                                                            <button type="submit" class="btn btn-danger">Excluir</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+
+                                <!-- TOTAL DO ALUNO -->
+                                {% set total_aluno = pagamentos | sum(attribute='total') %}
+                                <div class="text-end mt-2">
+                                    <strong>Total em aberto: R$ {{ "%.2f"|format(total_aluno) }}</strong>
+                                </div>
+
+                                <!-- BOTÃO WHATSAPP INDIVIDUAL (TODAS AS PARCELAS DO ALUNO) -->
+                                {% set mensagem = "Olá " ~ aluno.nome_responsavel ~ "!%0A%0AAluno: " ~ aluno.nome_completo ~ "%0ATotal em aberto: R$ " ~ "%.2f"|format(total_aluno) ~ "%0A%0AVencimentos:%0A" %}
+                                {% for item in pagamentos %}
+                                    {% set mensagem = mensagem ~ "• " ~ item.pagamento.data_vencimento.strftime('%d/%m/%Y') ~ " - R$ " ~ "%.2f"|format(item.total) ~ " (juros: R$ " ~ "%.2f"|format(item.juros) ~ ")%0A" %}
+                                {% endfor %}
+                                {% set mensagem = mensagem ~ "%0AFavor regularizar o quanto antes.%0AObrigado!%0AEscola de Futsal" %}
+
+                                <div class="text-end mt-3">
+                                    <a href="https://wa.me/?text={{ mensagem }}" target="_blank" class="btn btn-success btn-sm">
+                                        Enviar WhatsApp (Tudo)
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <!-- MODAL ENVIAR PARA TODOS -->
+                <div class="modal fade" id="whatsappAllModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title">Enviar para Todos</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>Abrirá uma aba do WhatsApp para cada responsável.</strong></p>
+                                <div id="whatsappLinks"></div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="button" class="btn btn-success" onclick="abrirTodosWhatsApp()">Abrir Todas</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            {% else %}
+                <p class="text-success text-center">Nenhuma mensalidade pendente no filtro aplicado.</p>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- SCRIPT PARA COBRANÇA SELECIONADA -->
+<script>
+function toggleAll(checkbox, alunoId) {
+    const checkboxes = document.querySelectorAll(`input[data-aluno="${alunoId}"]`);
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateEnviarButton();
+}
+
+document.querySelectorAll('.parcela-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateEnviarButton);
+});
+
+function updateEnviarButton() {
+    const checked = document.querySelectorAll('.parcela-checkbox:checked').length > 0;
+    document.getElementById('btnEnviarCobranca').style.display = checked ? 'inline-block' : 'none';
+}
+
+function enviarCobranca() {
+    const selecionadas = Array.from(document.querySelectorAll('.parcela-checkbox:checked'));
+    if (selecionadas.length === 0) return;
+
+    let mensagem = "Olá!%0A%0A*COBRANÇA - Escola de Futsal*%0A%0A";
+    let total = 0;
+
+    selecionadas.forEach((cb, index) => {
+        const row = cb.closest('tr');
+        const vencimento = row.cells[1].innerText;
+        const valor = row.cells[4].innerText.replace('R$ ', '').replace(/\s/g, '');
+        total += parseFloat(valor);
+        
+        mensagem += `${index + 1}. ${vencimento} - R$ ${valor}%0A`;
+    });
+
+    mensagem += `%0A*Total: R$ ${total.toFixed(2)}*%0A%0AFavor regularizar o quanto antes.%0AObrigado!`;
+
+    const url = `https://wa.me/?text=${mensagem}`;
+    window.open(url, '_blank');
+}
+
+// Preenche "Enviar para Todos"
+document.getElementById('whatsappAllModal').addEventListener('show.bs.modal', function () {
+    const container = document.getElementById('whatsappLinks');
+    container.innerHTML = '';
+    {% for aluno_id, info in alunos_dict.items() %}
+        {% set aluno = info.aluno %}
+        {% set pagamentos = info.pagamentos %}
+        {% set total_aluno = pagamentos | sum(attribute='total') %}
+        {% set mensagem = "Olá " ~ aluno.nome_responsavel ~ "!%0A%0AAluno: " ~ aluno.nome_completo ~ "%0ATotal em aberto: R$ " ~ "%.2f"|format(total_aluno) ~ "%0A%0AVencimentos:%0A" %}
+        {% for item in pagamentos %}
+            {% set mensagem = mensagem ~ "• " ~ item.pagamento.data_vencimento.strftime('%d/%m/%Y') ~ " - R$ " ~ "%.2f"|format(item.total) ~ " (juros: R$ " ~ "%.2f"|format(item.juros) ~ ")%0A" %}
+        {% endfor %}
+        {% set mensagem = mensagem ~ "%0AFavor regularizar.%0AObrigado!%0AEscola de Futsal" %}
+
+        const link = document.createElement('a');
+        link.href = `https://wa.me/?text=${'{{ mensagem }}'}`;
+        link.target = '_blank';
+        link.className = 'd-block mb-2 text-success';
+        link.innerHTML = `${'{{ aluno.nome_completo }}'} (R$ ${'{{ "%.2f"|format(total_aluno) }}'})`;
+        container.appendChild(link);
+    {% endfor %}
+});
+
+function abrirTodosWhatsApp() {
+    document.querySelectorAll('#whatsappLinks a').forEach(a => window.open(a.href, '_blank'));
+}
+</script>
+{% endblock %}

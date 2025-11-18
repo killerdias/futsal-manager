@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Recibos Emitidos - {{ "%02d"|format(mes) }}/{{ ano }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Recibos Emitidos - {{ "%02d"|format(mes) }}/{{ ano }}</h4>
+        <div>
+            <strong>Total Recebido: R$ {{ "%.2f"|format(total_mes) }}</strong>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <!-- Filtro rápido -->
+        <form method="GET" class="row g-3 mb-4">
+            <div class="col-auto">
+                <select class="form-select" name="mes">
+                    {% for m in range(1,13) %}
+                        <option value="{{ m }}" {% if m == mes %}selected{% endif %}>{{ "%02d"|format(m) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <input type="number" class="form-control" name="ano" value="{{ ano }}" min="2020" max="2030">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-success">Filtrar</button>
+                <a href="{{ url_for('relatorio_recibos') }}" class="btn btn-secondary">Hoje</a>
+            </div>
+        </form>
+
+        {% if dados %}
+            {% for item in dados %}
+                <div class="border rounded p-3 mb-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">
+                            {% if item.aluno.foto_path %}
+                                <img src="{{ url_for('uploaded_file', filename=item.aluno.foto_path) }}" class="foto-aluno me-2">
+                            {% endif %}
+                            <strong>{{ item.aluno.nome_completo }}</strong>
+                            <small class="text-muted">({{ item.aluno.nome_responsavel }})</small>
+                        </h6>
+                        <span class="badge bg-success">{{ item.pagamentos|length }} recibo{{ '' if item.pagamentos|length == 1 else 's' }}</span>
+                    </div>
+
+                    {% for p in item.pagamentos %}
+                        {% set recibo_texto = "RECIBO - ESCOLA DE FUTSAL\n\n" ~
+                            "Recebemos de: " ~ item.aluno.nome_responsavel ~ "\n" ~
+                            "Referente ao aluno: " ~ item.aluno.nome_completo ~ "\n" ~
+                            "Valor pago: R$ " ~ "%.2f"|format(p.valor) ~ "\n" ~
+                            "Data do pagamento: " ~ p.data_pagamento.strftime('%d/%m/%Y') ~ "\n" ~
+                            "Vencimento original: " ~ p.data_vencimento.strftime('%d/%m/%Y') ~ "\n" ~
+                            "Forma: " ~ p.forma_pagamento.replace('_', ' ')|title ~ "\n" ~
+                            "Plano: " ~ p.tipo_plano|title ~ "\n\n" ~
+                            "Obrigado pela preferência!\nEscola de Futsal - " ~ now().strftime('%d/%m/%Y às %H:%M') %}
+
+                        <div class="border-start border-success border-4 ps-3 py-2 mb-2 bg-white rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Pagamento:</strong> {{ p.data_pagamento.strftime('%d/%m/%Y') }} 
+                                    | <strong>Valor:</strong> R$ {{ "%.2f"|format(p.valor) }}
+                                    | <strong>{{ p.forma_pagamento.replace('_', ' ')|title }}</strong>
+                                </div>
+                                <a href="https://wa.me/?text={{ recibo_texto|urlencode }}"
+                                   target="_blank"
+                                   class="btn btn-success btn-sm">
+                                   Enviar Recibo no WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-center text-muted mt-5">Nenhum pagamento registrado neste período.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

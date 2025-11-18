@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Registrar Pagamento{% endblock %}
+{% block content %}
+<div class="card border-success">
+    <div class="card-header bg-success text-white">
+        <h4 class="mb-0"><i class="bi bi-cash-coin"></i> Registrar Pagamento</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5><strong>Aluno:</strong> {{ aluno.nome_completo }}</h5>
+                <p><strong>Responsável:</strong> {{ aluno.nome_responsavel }}</p>
+                <p><strong>Vencimento:</strong> {{ pagamento.data_vencimento.strftime('%d/%m/%Y') }}</p>
+                <p><strong>Valor Original:</strong> R$ {{ "%.2f"|format(pagamento.valor) }}</p>
+                {% if juros > 0 %}
+                    <p class="text-danger"><strong>Juros (1% ao dia):</strong> R$ {{ "%.2f"|format(juros) }}</p>
+                {% endif %}
+                <h4 class="text-primary"><strong>Total a Pagar: R$ {{ "%.2f"|format(total) }}</strong></h4>
+            </div>
+
+            <div class="col-md-6">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Forma de Pagamento</strong></label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="forma_pagamento" id="dinheiro" value="dinheiro" required>
+                                    <label class="form-check-label" for="dinheiro"><i class="bi bi-cash"></i> Dinheiro</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="forma_pagamento" id="pix" value="pix">
+                                    <label class="form-check-label" for="pix"><i class="bi bi-qr-code"></i> PIX</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="forma_pagamento" id="cartao_credito" value="cartao_credito">
+                                    <label class="form-check-label" for="cartao_credito"><i class="bi bi-credit-card"></i> Cartão Crédito</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="forma_pagamento" id="cartao_debito" value="cartao_debito">
+                                    <label class="form-check-label" for="cartao_debito"><i class="bi bi-credit-card-2-front"></i> Cartão Débito</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-check-circle"></i> Confirmar</button>
+                    <a href="{{ url_for('relatorio_alunos_aberto') }}" class="btn btn-secondary btn-lg"><i class="bi bi-x-circle"></i> Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

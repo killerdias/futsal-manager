@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Editar Aluno{% endblock %}
+{% block content %}
+<div class="card border-primary">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">Editar Aluno</h4>
+    </div>
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label">Nome Completo</label>
+                    <input type="text" class="form-control" name="nome_completo" value="{{ aluno.nome_completo }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Data Nascimento</label>
+                    <input type="date" class="form-control" name="data_nascimento" value="{{ aluno.data_nascimento.strftime('%Y-%m-%d') }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Responsável Legal</label>
+                    <input type="text" class="form-control" name="nome_responsavel" value="{{ aluno.nome_responsavel }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Posição</label>
+                    <input type="text" class="form-control" name="posicao" value="{{ aluno.posicao or '' }}" placeholder="ex: Goleiro">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Foto Atual</label><br>
+                    {% if aluno.foto_path %}
+                        <img src="{{ url_for('uploaded_file', filename=aluno.foto_path) }}" class="foto-aluno">
+                    {% else %}
+                        <i class="bi bi-person-circle text-muted" style="font-size:60px;"></i>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nova Foto (opcional)</label>
+                    <input type="file" class="form-control" name="foto" accept="image/*">
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                <a href="{{ url_for('relatorio_alunos') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
