@@ -281,8 +281,8 @@ def pagar(pagamento_id):
         pagamento.data_pagamento = datetime.now().date()
         pagamento.forma_pagamento = request.form['forma_pagamento']
         db.session.commit()
-        flash(f'Pagamento de {aluno.nome_completo} registrado!', 'success')
-        return redirect(url_for('relatorio_alunos_aberto'))
+        flash(f'Pagamento de {aluno.nome_completo} registrado com sucesso!', 'success')
+        return redirect(url_for('index'))
 
     return render_template('pagar.html', pagamento=pagamento, aluno=aluno, juros=juros, total=total)
 
