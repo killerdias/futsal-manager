@@ -16,6 +16,20 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
 
 import os
+from urllib.parse import urlparse
+
+# === CONFIGURAÇÃO AUTOMÁTICA DO BANCO (PostgreSQL no Render / SQLite local) ===
+if os.environ.get('DATABASE_URL'):
+    # Render usa postgresql:// → SQLAlchemy precisa de postgres://
+    db_url = os.environ['DATABASE_URL']
+    if db_url.startswith('postgresql://'):
+        db_url = db_url.replace('postgresql://', 'postgres://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+else:
+    # Quando rodar na tua máquina (local)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///escola_futsal.db'
+
+import os
 from flask import send_from_directory
 
 # Garante que a pasta uploads existe e serve arquivos estáticos
